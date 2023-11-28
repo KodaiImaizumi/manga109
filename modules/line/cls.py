@@ -2,7 +2,7 @@
 # https://github.com/yagays/pytorch_bert_japanese/blob/master/bert_juman.py#L46
 
 
-from transformers import BertJapaneseTokenizer, BertForSequenceClassification
+from transformers import BertJapaneseTokenizer, BertForSequenceClassification, BertForNextSentencePrediction
 import pandas as pd
 import numpy as np
 import torch
@@ -13,12 +13,9 @@ class FeaturePretrainedBert:
     def __init__(self):
     
         super().__init__()
-        self.tokenizer = BertJapaneseTokenizer.from_pretrained('cl-tohoku/bert-base-japanese-whole-word-masking')
-        self.model = BertForSequenceClassification.from_pretrained(
-            "cl-tohoku/bert-base-japanese-whole-word-masking", # 日本語Pre trainedモデルの指定
-            num_labels = 2, # ラベル数（今回はBinayなので2、数値を増やせばマルチラベルも対応可）
-            output_attentions = False, # アテンションベクトルを出力するか
-            output_hidden_states = True, # 隠れ層を出力するか
+        self.tokenizer = BertJapaneseTokenizer.from_pretrained("cl-tohoku/bert-base-japanese-v3")
+        self.model = BertForNextSentencePrediction.from_pretrained(
+            "cl-tohoku/bert-base-japanese-v3"
         )
         self.model.eval()
 
@@ -50,7 +47,19 @@ class FeaturePretrainedBert:
         return f8
 
 
-xInstance = FeaturePretrainedBert()
-x = xInstance.get("吾輩は猫である。", "猫なのである。")
-print(x)
+# xInstance = FeaturePretrainedBert()
+# x = xInstance.get("吾輩は猫である。", "猫なのである。")
+# print(x)
+
+tokenizer = BertJapaneseTokenizer.from_pretrained("cl-tohoku/bert-base-japanese-v3")
+model = BertForNextSentencePrediction.from_pretrained("cl-tohoku/bert-base-japanese-v3")
+
+encoding = tokenizer("これは何ですか", "助けて", return_tensors="pt")
+
+outputs = model(**encoding, labels=torch.LongTensor([1]))
+logits = outputs.logits
+is_next = logits[0, 0] > logits[0, 1]
+print(is_next)
+
+
 
